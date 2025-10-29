@@ -1,6 +1,7 @@
 import reflex as rx
 import logging
 import httpx
+import os
 
 
 class Message(rx.Base):
@@ -14,9 +15,12 @@ class ChatState(rx.State):
     current_page: str = "Chat"
     mcp_url: str = "https://mcp.lemonado.io/mcp"
     mcp_token: str = ""
-    ollama_base_url: str = "http://localhost:11434"
-    model_options: list[str] = ["gemma3:4b", "phi4-main"]
-    model_name: str = "gemma3:4b"
+    model_options: list[str] = [
+        "google/gemma-2-9b-it:free",
+        "meta-llama/llama-3-8b-instruct:free",
+        "microsoft/phi-3-medium-4k-instruct:free",
+    ]
+    model_name: str = "google/gemma-2-9b-it:free"
 
     @rx.event
     async def on_submit(self, form_data: dict):
@@ -31,20 +35,37 @@ class ChatState(rx.State):
             mcp_context = await self.query_mcp_data(user_input)
         prompt = f"Context from data source: {mcp_context}\n\nUser query: {user_input}\n\nBased ONLY on the context provided, answer the user's query. If the context is insufficient, say so."
         ai_response = ""
+        openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+        if not openrouter_api_key:
+            ai_response = "Error: OPENROUTER_API_KEY environment variable is not set."
+            self.messages.append(Message(role="assistant", content=ai_response))
+            self.is_processing = False
+            return
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.post(
-                    f"{self.ollama_base_url}/api/generate",
-                    json={"model": self.model_name, "prompt": prompt, "stream": False},
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {openrouter_api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": self.model_name,
+                        "messages": [
+                            {"role": "system", "content": prompt},
+                            {"role": "user", "content": user_input},
+                        ],
+                    },
                 )
                 response.raise_for_status()
                 result = response.json()
-                ai_response = result.get(
-                    "response", "Sorry, I couldn't generate a response."
-                )
+                ai_response = result["choices"][0]["message"]["content"]
+        except httpx.ConnectError as e:
+            logging.exception(f"Connection to OpenRouter failed: {e}")
+            ai_response = "Error: Could not connect to OpenRouter. Please check your network connection."
         except httpx.HTTPStatusError as e:
-            logging.exception(f"Error connecting to Ollama: {e}")
-            ai_response = f"Error: Could not get a response from the AI model (Status: {e.response.status_code}). Please ensure Ollama is running and the model '{self.model_name}' is available."
+            logging.exception(f"Error connecting to OpenRouter: {e}")
+            ai_response = f"Error: API request failed (Status: {e.response.status_code}). Please check your API key and model name."
         except Exception as e:
             logging.exception(f"An unexpected error occurred: {e}")
             ai_response = (
