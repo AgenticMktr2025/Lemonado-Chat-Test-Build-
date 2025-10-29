@@ -15,7 +15,8 @@ class ChatState(rx.State):
     mcp_url: str = "https://mcp.lemonado.io/mcp"
     mcp_token: str = ""
     ollama_base_url: str = "http://localhost:11434"
-    model_name: str = "phi4-mini"
+    model_options: list[str] = ["gemma3:4b", "phi4-main"]
+    model_name: str = "gemma3:4b"
 
     @rx.event
     async def on_submit(self, form_data: dict):

@@ -25,9 +25,14 @@ def chat_settings() -> rx.Component:
                 rx.el.label(
                     "Model:", class_name="block text-sm font-medium text-gray-700 mb-2"
                 ),
-                rx.el.p(
-                    f"Using: {ChatState.model_name}",
-                    class_name="text-sm text-gray-600 bg-gray-100 p-2 rounded",
+                rx.el.select(
+                    rx.foreach(
+                        ChatState.model_options,
+                        lambda option: rx.el.option(option, value=option),
+                    ),
+                    value=ChatState.model_name,
+                    on_change=ChatState.set_model_name,
+                    class_name="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
                 ),
                 class_name="mb-4",
             ),
