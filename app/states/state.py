@@ -16,7 +16,7 @@ class ChatState(rx.State):
     is_processing: bool = False
     current_page: str = "Chat"
     mcp_url: str = "https://mcp.lemonado.io/mcp"
-    mcp_token: str = ""
+    mcp_token: str = os.getenv("MCP_BEARER_TOKEN", "")
     model_options: list[str] = [
         "google/gemma-2-9b-it:free",
         "meta-llama/llama-3-8b-instruct:free",
@@ -189,11 +189,5 @@ class ChatState(rx.State):
     @rx.event
     def clear_chat(self):
         self.messages = []
-        self.mcp_session_id = ""
-        self.available_tools = []
-
-    @rx.event
-    def set_mcp_token(self, token: str):
-        self.mcp_token = token
         self.mcp_session_id = ""
         self.available_tools = []

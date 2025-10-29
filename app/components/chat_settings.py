@@ -10,19 +10,6 @@ def chat_settings() -> rx.Component:
             ),
             rx.el.div(
                 rx.el.label(
-                    "MCP Token:",
-                    class_name="block text-sm font-medium text-gray-700 mb-2",
-                ),
-                rx.el.input(
-                    placeholder="Enter your MCP Bearer token",
-                    type="password",
-                    on_change=ChatState.set_mcp_token,
-                    class_name="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                ),
-                class_name="mb-4",
-            ),
-            rx.el.div(
-                rx.el.label(
                     "Model:", class_name="block text-sm font-medium text-gray-700 mb-2"
                 ),
                 rx.el.select(
